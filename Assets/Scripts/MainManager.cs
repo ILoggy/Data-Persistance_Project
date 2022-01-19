@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using System.IO;
 
 public class MainManager : MonoBehaviour
 {
@@ -12,14 +13,27 @@ public class MainManager : MonoBehaviour
 
     public Text ScoreText;
     public GameObject GameOverText;
+    public Text hightscoreText;
+
+    public int bestScore;
+    public string bestPlayerName;
     
     private bool m_Started = false;
     private int m_Points;
     
     private bool m_GameOver = false;
 
-    
+
     // Start is called before the first frame update
+    private void Awake()
+    {
+        LoadData();
+        DataBase data = new DataBase();
+        Debug.LogWarning(data.bestPlayerName);
+        Debug.LogWarning(data.bestScore);
+        Debug.LogWarning(FindObjectOfType<MenuManager>().PlayerName);
+    }
+
     void Start()
     {
         const float step = 0.6f;
@@ -70,7 +84,56 @@ public class MainManager : MonoBehaviour
 
     public void GameOver()
     {
+        SaveData();
+        hightscoreText.text = "Best score: " + bestPlayerName + " : " + bestScore;
         m_GameOver = true;
         GameOverText.SetActive(true);
+    }
+
+    [System.Serializable]
+    class DataBase
+    {
+        public string bestPlayerName;
+        public int bestScore;
+    }
+
+    void SaveData()
+    {
+        DataBase DataBase = new DataBase();
+        if (m_Points > bestScore)
+        {
+            DataBase.bestScore = m_Points;
+            bestScore = m_Points;
+            DataBase.bestPlayerName = FindObjectOfType<MenuManager>().PlayerName;
+            bestPlayerName = FindObjectOfType<MenuManager>().PlayerName;
+
+            string json = JsonUtility.ToJson(DataBase);
+            string savefile = Application.persistentDataPath + "/Save/savefile.json";
+            if (File.Exists(savefile))
+            {
+                File.WriteAllText(savefile, json);
+            }
+        }
+    }
+
+    void LoadData()
+    {
+        DataBase DataBase = new DataBase();
+        string path = Application.persistentDataPath + "/Save/savefile.json";
+        if (File.Exists(path))
+        {
+            string json = File.ReadAllText(path);
+            JsonUtility.FromJsonOverwrite(json, DataBase);
+            bestPlayerName = DataBase.bestPlayerName;
+            bestScore = DataBase.bestScore;
+            hightscoreText.text = "Best score: " + bestPlayerName + " : " + bestScore;
+        }
+
+
+    }
+
+    public void BackToMenu()
+    {
+        SceneManager.LoadScene(0);
     }
 }
